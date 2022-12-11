@@ -1,0 +1,172 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: bitcoind-rpc-pass
+  namespace: default
+spec:
+  encryptedData:
+    bitcoind-rpc-pass: AgBTpdf00vANaRmECB4ZM3ys3r5v2ZbtbUrWajLj8OzTudQl5UPzxX1rEK7Mhf4iSHh+pXCuEbgS9G3syi6fQ3Vn5cVh+sa8wjcrjTkRgADycUmt3mGwswvsuI2EDXCY3xOhIHT55yPWIMnbR1W9/smrELDupWjYZdmv6gkKT20L3r33MWTpVPHypz8vNs/AIw3SFJqX06AekVEu1QheWw1F7qCmF4EPGyKIWwob198Ks247mjohI5y1hpDQJKEQfhXpeVJ1RaC/Sj7rklf/F3NTGTr53aCA3rTrDopiqxMkw+gyERDNndArOY4Nw/dguatW9x5VdWp2inH60qiS4quzKk4QKy5ckHQTy5TL1Qin8WCLo2xJegDpLKIFSLwj/xzXWWTlvFqXendwV1FrGphTvDqpjpkDxwo+uko9fZhk7i+GyYuLrkAzui6kNIwWAXjshcrJf7acvo30mGpr0CSoVCL4wbZy7umWhxkB1vi4At2NjLRfVMx03M1e/ODU3gNT9ZOu5JECPfAUuEb6Fs0mqeIWnEahHfKskD4JwlRYQefyNznQLslr6rVkwukUnhIeRfoZoRLFsNZgaCxZ65WSCQ5PNZiR2YVjXco8eOHiZhZWLz3J/VNQ1AafLmOklsBuaZB09lH8ks/kakrNOUPaf2QYs2cOGv2COo41eJLEijCzy1cPkV12GLN1Wd5SB71YVcXc0fsNJ7IEYabcoZVvERXeFMmeRSbMboGePU8clnX0AagvwqVi
+  template:
+    metadata:
+      creationTimestamp: null
+      name: bitcoind-rpc-pass
+      namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bitcoind
+  labels:
+    app: bitcoind
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: bitcoind
+  template:
+    metadata:
+      labels:
+        app: bitcoind
+    spec:
+      containers:
+      - name: bitcoind
+        image: "bitcoind:23.0"
+        args: [
+          '-rpcuser=bitcoinrpc',
+          '-rpcpassword=$(RPC_PASSWORD)',
+          '-disablewallet=1',
+          '-printtoconsole=1',
+          '-txindex=1',
+          '-rpcbind=0.0.0.0:8332',
+          '-rpcallowip=10.0.0.0/8'
+        ]
+        env:
+        - name: RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bitcoind-rpc-pass
+              key: bitcoind-rpc-pass
+        ports:
+        - name: bitcoind-p2p
+          containerPort: 8333
+        - name: bitcoind-rpc
+          containerPort: 8332
+        volumeMounts: 
+        - name: "bitcoind-data"
+          mountPath: /bitcoin/.bitcoin
+      - name: prometheus-exporter
+        image: bitcoin-prometheus-exporter:0.7.0
+        env:
+        - name: BITCOIN_RPC_HOST
+          value: localhost
+        - name: BITCOIN_RPC_USER
+          value: bitcoinrpc
+        - name: BITCOIN_RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bitcoind-rpc-pass
+              key: bitcoind-rpc-pass
+        - name: REFRESH_SECONDS
+          value: "5"
+        - name: LOG_LEVEL
+          value: INFO
+        ports:
+        - name: prometheus-port
+          containerPort: 9332
+      volumes:
+      - name: bitcoind-data
+        persistentVolumeClaim:
+          claimName: bitcoind-pvc
+      
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: bitcoind-pv # some unique name
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Ti # size of the volume
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: bitcoind-pvc # name of pvc which can claim this PV
+    namespace: default # namespace for the pvc
+  csi:
+    driver: zfs.csi.openebs.io
+    fsType: zfs
+    volumeAttributes:
+      openebs.io/poolname: datapool/k3s # change the pool name accordingly
+    volumeHandle: bitcoind # This should be same as the zfs volume name
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - rodan # change the hostname where volume is present
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-zfspv
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: bitcoind-pvc
+spec:
+  storageClassName: openebs-zfspv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Ti
+---
+apiVersion: zfs.openebs.io/v1alpha1
+kind: ZFSVolume
+metadata:
+  name: bitcoind  # should be same as zfs volume name
+  namespace: openebs
+spec:
+  capacity: "1099511627776" # size of the volume in bytes
+  fsType: zfs
+  ownerNodeID: rodan # should be the nodename where ZPOOL is running
+  poolName: datapool/k3s # poolname where the volume is present
+  volumeType: DATASET # whether it is a DATASET or ZVOL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitcoind
+spec:
+  ports:
+  - name: bitcoind-p2p
+    port: 8333
+    targetPort: bitcoind-p2p
+  - name: bitcoind-rpc
+    port: 8332
+    targetPort: bitcoind-rpc
+  - name: prometheus-port
+    port: 9332
+    targetPort: prometheus-port
+  selector:
+    app: bitcoind
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: bitcoind-p2p-ingress
+spec:
+  entryPoints:
+    - bitcoind-p2p
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: bitcoind
+          port: bitcoind-p2p
+

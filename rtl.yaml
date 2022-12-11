@@ -1,0 +1,161 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: rtl
+  namespace: default
+spec:
+  encryptedData:
+    password: AgA2YwJY5EvQhR30HlE1fYaPV4rHJLkAatJHO0xBRlvXFPUN6xCZ4V38jqLY19zXwqy0TVhIy121c67eLwWpnkat33O6dvf+z+58tztBGooXnS7+c5NLSYtNhxOd6K+O8XjXLjhYaI8qNlgVmND7C+2INXl/7a3ww3qgc07xo8d+qh3pqF6GwujZtsicvfWvtHmxCtdM7s2m006CnJA1wemVj8tWxAnujNqQTPVk+tucgAr9zV20rbJN/PzSPwV77lvGMc8s/IjiqA4TkqfdyYzfLiLpi8La0L3o48X+YKR3E3IWJjzWcBtCDnBOEeQ1POtuIGalh7NQTqcdW8AFEyzjgGFdmZx4CShg3WRPUGgCDQjW6J6cTktBpojKns9+0iUwFffB7dcqrefBfcJMqkbeIzMOyOWuynWYnhidY9jLZQ1/Ft3sMs1a6TqM+8al3VJHwjOgN4P1yXcnAQutY1xgG/Mtcngy0KBgO882Vq47t7ba2/i1weGAGCk5IqX9acGHoPEdLB+xBjBQusMbNG9s5S/JvoX5vypJrLj/fTfUHawSoQKcUzhvxL/M2Zs82aupo3B06cPm7b9rnvkBNBS9LrveAHWIgx3LAqCVmROiMpv6bHnzUF/COzyxIToTWMIR1xkcg6cShN9MlNOqeyIqM2b+oqLeTDwFJPBFPfMwChgFk0NnPuhT41oywf5vxhyRKoNWTr3uUHyuW0Y0msG29BBb5UhCNSk80UYqGsbtjQ==
+  template:
+    metadata:
+      creationTimestamp: null
+      name: rtl
+      namespace: default
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: cln-macaroon
+  namespace: default
+spec:
+  encryptedData:
+    access.macaroon: AgCg6QTTj41313dHYB1OymitL3eO+VBmMs84dRI8oKMdCD/KaxtiEFO1NC29X93WzF04ChhRgfS42n5v8G0LZP5jTUrPUOKxSDtVDgo30lwTddeYhi75QJbPZDxG882DXdKO4bVDS/PpSP4tD1ahqXbxZWYF332BoZsAmYQDNI40H7SLzW6TmNOjGatUTauoXGUtbAheLlzZS0gwRJ9Nk84gby8ujzR/88bFQvvmmYtLAZbk/xwnKi+RHmwWUGuXEZGgiRPSD9EwOXaNsfeN3bqZFH6lnqesIspLwzAk67EUbqfWFRo52eyj20gy/uI2igcL0DpexTfbCKj6UGqkALiO5jaY9HCeEbkbpfulAo3prDpIs1INLj0RSCIlyopD4HZEjGPclu2UAz6T5oeqv2fgTQSBmD1K2CYNnS5CwEpTWo3oXfhWKePQHm/iSf1ZRE1zqwT6JRGCiR2kGHkikDj2EqAqU6ypgcRv0gq3DWpAahbVBLfT+apX3WnysqzO6w5t0iKm+ywQMCkIf9wLhzmPNxHonTVNIo7FPNpGuElmotUYycHvZIjhNHQdaFd/JvJGrof/aOGd7QqElAlMDljZrXaw2k2hF9uU9LByU7ydS9wqebIyFOnKvYsNsSLGKuITErpCR8emPiGzjTQQb/T3j97rac2xQouF8P1f3fHEZLlvgaUVmrnn0Btb4Nyo9rdbG2OOv8cEJQL/gr087kTWpw/oXN1DhaNIotL2PqfsVcn7/NZg9NUlFyk9eQRgtWpTEIAWbtLjoZwNU9Y6m5GYM33btID53bCfG5UWdAPMrit8bJs+fFTfUMQ00zEmFyTGrWGdEDm1DJsambT9vciD6KE=
+  template:
+    metadata:
+      creationTimestamp: null
+      name: cln-macaroon
+      namespace: default
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtl
+  labels:
+    app: rtl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rtl
+  template:
+    metadata:
+      labels:
+        app: rtl
+    spec:
+      containers:
+      - name: rtl
+        image: rtl:peerswap
+        env:
+        - name: APP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rtl
+              key: password
+        - name: RTL_CONFIG_PATH
+          value: /rtl-config
+        ports:
+        - name: web
+          containerPort: 3010
+        volumeMounts: 
+        - name: macaroon
+          readOnly: true
+          mountPath: /rest-certs
+        - name: config
+          mountPath: /rtl-config
+      volumes:
+      - name: macaroon
+        secret:
+          secretName: cln-macaroon
+      - name: config
+        configMap:
+          name: rtlc
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rtl
+data:
+  RTL-Config.json: |
+    {
+      "port": "3010",
+      "SSO": {
+        "rtlSSO": 0,
+        "rtlCookiePath": "",
+        "logoutRedirectLink": ""
+      },
+      "nodes": [
+        {
+          "index": 1,
+          "lnNode": "Core Lightning Testnet # 1",
+          "lnImplementation": "CLN",
+          "Authentication": {
+            "macaroonPath": "/rest-certs",
+            "configPath": ""
+          },
+          "Settings": {
+            "userPersona": "OPERATOR",
+            "themeMode": "DAY",
+            "themeColor": "PURPLE",
+            "bitcoindConfigPath": "",
+            "logLevel": "INFO",
+            "fiatConversion": false,
+            "lnServerUrl": "http://clightning:3001",
+            "enablePeerswap": true
+          }
+        }
+      ]
+    }
+ 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rtl
+spec:
+  ports:
+  - name: web
+    port: 80
+    targetPort: web
+  selector:
+    app: rtl
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rtl-rodan-lan
+  namespace: default
+spec:
+  dnsNames:
+    - rtl.rodan.lan
+  secretName: rtl-rodan-lan
+  issuerRef:
+    name: root-cert
+    kind: ClusterIssuer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rtl-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  tls:
+  - hosts:
+      - rtl.rodan.lan
+    secretName: rtl-rodan-lan
+  rules:
+    - host: rtl.rodan.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  rtl
+                port:
+                  number: 80

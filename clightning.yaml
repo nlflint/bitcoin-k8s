@@ -1,0 +1,295 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clightning
+  labels:
+    app: clightning
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: clightning
+  template:
+    metadata:
+      labels:
+        app: clightning
+    spec:
+      containers:
+      - name: clightning
+        image: lightning:0.12.1-rtl-peerswap
+        args: [
+          "--plugin=/c-lightning-REST/plugin.js",
+          "--plugin=/peerswap/peerswap-plugin",
+          "--log-level=debug:plugin-peerswap-plugin",
+          "--rest-domain=cln-rest.rodan.lan",
+          "--rest-protocol=http",
+          "--network=bitcoin",
+          "--bitcoin-rpcuser=bitcoinrpc",
+          "--bitcoin-rpcpassword=$(BITCOIN_RPC_PASSWORD)",
+          "--bitcoin-rpcconnect=bitcoind",
+        ]
+        env:
+        - name: EXPOSE_TCP
+          value: "true"
+        - name: BITCOIN_RPC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: bitcoind-rpc-pass
+              key: bitcoind-rpc-pass
+        ports:
+        - name: rest
+          containerPort: 3001
+        - name: swagger
+          containerPort: 4001
+        - name: p2p
+          containerPort: 9735
+        volumeMounts: 
+        - name: data
+          mountPath: /root/.lightning
+        - name: rest-certs
+          mountPath: /c-lightning-REST/certs
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: cln-data-pvc
+      - name: rest-certs
+        persistentVolumeClaim:
+          claimName: cln-rest-certs-pvc
+      
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cln-data-pv # some unique name
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Gi # size of the volume
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: cln-data-pvc # name of pvc which can claim this PV
+    namespace: default # namespace for the pvc
+  csi:
+    driver: zfs.csi.openebs.io
+    fsType: zfs
+    volumeAttributes:
+      openebs.io/poolname: datapool/k3s # change the pool name accordingly
+    volumeHandle: cln-data # This should be same as the zfs volume name
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - rodan # change the hostname where volume is present
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-zfspv
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cln-data-pvc
+spec:
+  storageClassName: openebs-zfspv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cln-rest-certs-pvc # some unique name
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Mi # size of the volume
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: cln-rest-certs-pvc # name of pvc which can claim this PV
+    namespace: default # namespace for the pvc
+  csi:
+    driver: zfs.csi.openebs.io
+    fsType: zfs
+    volumeAttributes:
+      openebs.io/poolname: datapool/k3s # change the pool name accordingly
+    volumeHandle: cln-rest-certs # This should be same as the zfs volume name
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - rodan # change the hostname where volume is present
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-zfspv
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cln-rest-certs-pvc
+spec:
+  storageClassName: openebs-zfspv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+---
+apiVersion: zfs.openebs.io/v1alpha1
+kind: ZFSVolume
+metadata:
+  name: cln-data  # should be same as zfs volume name
+  namespace: openebs
+spec:
+  capacity: "107374182400" # size of the volume in bytes
+  fsType: zfs
+  ownerNodeID: rodan # should be the nodename where ZPOOL is running
+  poolName: datapool/k3s # poolname where the volume is present
+  volumeType: DATASET # whether it is a DATASET or ZVOL
+---
+apiVersion: zfs.openebs.io/v1alpha1
+kind: ZFSVolume
+metadata:
+  name: cln-rest-certs  # should be same as zfs volume name
+  namespace: openebs
+spec:
+  capacity: "1048576" # size of the volume in bytes
+  fsType: zfs
+  ownerNodeID: rodan # should be the nodename where ZPOOL is running
+  poolName: datapool/k3s # poolname where the volume is present
+  volumeType: DATASET # whether it is a DATASET or ZVOL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clightning
+spec:
+  ports:
+  - name: p2p
+    port: 9735
+    targetPort: p2p
+  - name: rest
+    port: 3001
+    targetPort: rest
+  - name: swagger
+    port: 4001
+    targetPort: swagger
+  selector:
+    app: clightning
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: cln-p2p-ingress
+spec:
+  entryPoints:
+    - cln-p2p
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: clightning
+          port: p2p
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: root-cert
+  namespace: cert-manager
+spec:
+  commonName: Rodan Root Cert
+  isCA: true
+  secretName: root-cert
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: root-cert
+spec:
+  ca:
+    secretName: root-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cln-rest-rodan-lan
+  namespace: default
+spec:
+  dnsNames:
+    - cln-rest.rodan.lan
+  secretName: cln-rest-rodan-lan
+  issuerRef:
+    name: root-cert
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cln-swagger-rodan-lan
+  namespace: default
+spec:
+  dnsNames:
+    - cln-swagger.rodan.lan
+  secretName: cln-swagger-rodan-lan
+  issuerRef:
+    name: root-cert
+    kind: ClusterIssuer
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cln-web-ingress
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  tls:
+  - hosts:
+      - cln-rest.rodan.lan
+    secretName: cln-rest-rodan-lan
+  - hosts:
+      - cln-swagger.rodan.lan
+    secretName: cln-swagger-rodan-lan
+  rules:
+    - host: cln-swagger.rodan.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  clightning
+                port:
+                  number: 4001
+    - host: cln-rest.rodan.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  clightning
+                port:
+                  number: 3001

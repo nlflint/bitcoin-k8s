@@ -1,0 +1,127 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: electrs
+  labels:
+    app: electrs
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: electrs
+  template:
+    metadata:
+      labels:
+        app: electrs
+    spec:
+      containers:
+      - name: electrs
+        image: electrs:0.9.9
+        command: ["electrs"]
+        args: ["--conf", "/data/config.toml"]
+        env:
+        - name: ELECTRS_ELECTRUM_RPC_ADDR
+          value: 0.0.0.0:50001
+        - name: ELECTRS_DB_DIR
+          value: /data
+        - name: ELECTRS_LOG_FILTERS
+          value: INFO
+        - name: ELECTRS_DAEMON_RPC_ADDR
+          value: bitcoind:8332
+        - name: ELECTRS_DAEMON_P2P_ADDR
+          value: bitcoind:8333
+        ports:
+        - name: electrs
+          containerPort: 50001
+        volumeMounts: 
+        - name: "electrs-data"
+          mountPath: /data
+      volumes:
+      - name: electrs-data
+        persistentVolumeClaim:
+          claimName: electrs-pvc
+      
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: electrs-pv # some unique name
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 200Gi # size of the volume
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: electrs-pvc # name of pvc which can claim this PV
+    namespace: default # namespace for the pvc
+  csi:
+    driver: zfs.csi.openebs.io
+    fsType: zfs
+    volumeAttributes:
+      openebs.io/poolname: datapool/k3s # change the pool name accordingly
+    volumeHandle: electrs # This should be same as the zfs volume name
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - rodan # change the hostname where volume is present
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-zfspv
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: electrs-pvc
+spec:
+  storageClassName: openebs-zfspv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Gi
+---
+apiVersion: zfs.openebs.io/v1alpha1
+kind: ZFSVolume
+metadata:
+  name: electrs  # should be same as zfs volume name
+  namespace: openebs
+spec:
+  capacity: "214748364800" # size of the volume in bytes
+  fsType: zfs
+  ownerNodeID: rodan # should be the nodename where ZPOOL is running
+  poolName: datapool/k3s # poolname where the volume is present
+  volumeType: DATASET # whether it is a DATASET or ZVOL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: electrs
+spec:
+  ports:
+  - name: electrs
+    port: 50001
+    targetPort: electrs
+  selector:
+    app: electrs
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: electrs-ingress
+spec:
+  entryPoints:
+    - electrs
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: electrs
+          port: electrs
