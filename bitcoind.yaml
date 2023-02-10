@@ -144,6 +144,8 @@ kind: Service
 metadata:
   name: bitcoind
 spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
   ports:
   - name: bitcoind-p2p
     port: 8333
