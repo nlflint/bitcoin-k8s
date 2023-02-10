@@ -106,22 +106,10 @@ kind: Service
 metadata:
   name: electrs
 spec:
+  type: LoadBalancer
   ports:
   - name: electrs
     port: 50001
     targetPort: electrs
   selector:
     app: electrs
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRouteTCP
-metadata:
-  name: electrs-ingress
-spec:
-  entryPoints:
-    - electrs
-  routes:
-    - match: HostSNI(`*`)
-      services:
-        - name: electrs
-          port: electrs
