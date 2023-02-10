@@ -158,17 +158,4 @@ spec:
     targetPort: prometheus-port
   selector:
     app: bitcoind
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRouteTCP
-metadata:
-  name: bitcoind-p2p-ingress
-spec:
-  entryPoints:
-    - bitcoind-p2p
-  routes:
-    - match: HostSNI(`*`)
-      services:
-        - name: bitcoind
-          port: bitcoind-p2p
 
