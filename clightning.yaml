@@ -177,10 +177,20 @@ kind: Service
 metadata:
   name: clightning
 spec:
+  type: LoadBalancer
   ports:
   - name: p2p
     port: 9735
     targetPort: p2p
+  selector:
+    app: clightning
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clightning-rest
+spec:
+  ports:
   - name: rest
     port: 3001
     targetPort: rest
@@ -189,73 +199,6 @@ spec:
     targetPort: swagger
   selector:
     app: clightning
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRouteTCP
-metadata:
-  name: cln-p2p-ingress
-spec:
-  entryPoints:
-    - cln-p2p
-  routes:
-    - match: HostSNI(`*`)
-      services:
-        - name: clightning
-          port: p2p
----
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned
-spec:
-  selfSigned: {}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: root-cert
-  namespace: cert-manager
-spec:
-  commonName: Rodan Root Cert
-  isCA: true
-  secretName: root-cert
-  issuerRef:
-    name: selfsigned
-    kind: ClusterIssuer
----
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: root-cert
-spec:
-  ca:
-    secretName: root-cert
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: cln-rest-rodan-lan
-  namespace: default
-spec:
-  dnsNames:
-    - cln-rest.rodan.lan
-  secretName: cln-rest-rodan-lan
-  issuerRef:
-    name: root-cert
-    kind: ClusterIssuer
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: cln-swagger-rodan-lan
-  namespace: default
-spec:
-  dnsNames:
-    - cln-swagger.rodan.lan
-  secretName: cln-swagger-rodan-lan
-  issuerRef:
-    name: root-cert
-    kind: ClusterIssuer
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -267,29 +210,29 @@ metadata:
 spec:
   tls:
   - hosts:
-      - cln-rest.rodan.lan
-    secretName: cln-rest-rodan-lan
+      - cln-rest.bitbeard.net
+    secretName: wildcard-cert-prod
   - hosts:
-      - cln-swagger.rodan.lan
-    secretName: cln-swagger-rodan-lan
+      - cln-swagger.bitbeard.net
+    secretName: wildcard-cert-prod
   rules:
-    - host: cln-swagger.rodan.lan
+    - host: cln-swagger.bitbeard.net
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name:  clightning
+                name:  clightning-rest
                 port:
                   number: 4001
-    - host: cln-rest.rodan.lan
+    - host: cln-rest.bitbeard.net
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name:  clightning
+                name:  clightning-rest
                 port:
                   number: 3001
