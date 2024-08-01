@@ -19,10 +19,10 @@ spec:
     spec:
       containers:
       - name: clightning
-        image: lightning:0.12.1-rtl-peerswap
+        image: lightning:23.05-rtl-peerswap
         args: [
-          "--plugin=/c-lightning-REST/plugin.js",
-          "--plugin=/peerswap/peerswap-plugin",
+          "--plugin=/c-lightning-REST/c-lightning-REST",
+          "--plugin=/peerswap/peerswap",
           "--log-level=debug:plugin-peerswap-plugin",
           "--rest-domain=cln-rest.rodan.lan",
           "--rest-protocol=http",
@@ -51,6 +51,19 @@ spec:
           mountPath: /root/.lightning
         - name: rest-certs
           mountPath: /c-lightning-REST/certs
+      initContainers:
+        - name: peerswap-config
+          image: alpine:latest
+          command: ['sh', '-c', 'printf "[Bitcoin]\nrpcuser=\"bitcoinrpc\"\nrpcpassword=\"$(BITCOIN_RPC_PASSWORD)\"\nbitcoinswaps=true\nrpchost=\"bitcoind\"" > ~/.lightning/bitcoin/peerswap/peerswap.conf']
+          volumeMounts:
+            - name: data
+              mountPath: /root/.lightning
+          env:
+            - name: BITCOIN_RPC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bitcoind-rpc-pass
+                  key: bitcoind-rpc-pass 
       volumes:
       - name: data
         persistentVolumeClaim:

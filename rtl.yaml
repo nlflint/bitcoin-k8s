@@ -7,7 +7,7 @@ metadata:
   namespace: default
 spec:
   encryptedData:
-    password: AgA2YwJY5EvQhR30HlE1fYaPV4rHJLkAatJHO0xBRlvXFPUN6xCZ4V38jqLY19zXwqy0TVhIy121c67eLwWpnkat33O6dvf+z+58tztBGooXnS7+c5NLSYtNhxOd6K+O8XjXLjhYaI8qNlgVmND7C+2INXl/7a3ww3qgc07xo8d+qh3pqF6GwujZtsicvfWvtHmxCtdM7s2m006CnJA1wemVj8tWxAnujNqQTPVk+tucgAr9zV20rbJN/PzSPwV77lvGMc8s/IjiqA4TkqfdyYzfLiLpi8La0L3o48X+YKR3E3IWJjzWcBtCDnBOEeQ1POtuIGalh7NQTqcdW8AFEyzjgGFdmZx4CShg3WRPUGgCDQjW6J6cTktBpojKns9+0iUwFffB7dcqrefBfcJMqkbeIzMOyOWuynWYnhidY9jLZQ1/Ft3sMs1a6TqM+8al3VJHwjOgN4P1yXcnAQutY1xgG/Mtcngy0KBgO882Vq47t7ba2/i1weGAGCk5IqX9acGHoPEdLB+xBjBQusMbNG9s5S/JvoX5vypJrLj/fTfUHawSoQKcUzhvxL/M2Zs82aupo3B06cPm7b9rnvkBNBS9LrveAHWIgx3LAqCVmROiMpv6bHnzUF/COzyxIToTWMIR1xkcg6cShN9MlNOqeyIqM2b+oqLeTDwFJPBFPfMwChgFk0NnPuhT41oywf5vxhyRKoNWTr3uUHyuW0Y0msG29BBb5UhCNSk80UYqGsbtjQ==
+    password: AgAtLQoajAn55B9Dp/QdlJaPeXdDijvAoFJTHZkgaJi8dnUfAfxMAVhAV5i7/UoZexbdPrPKuRZaEixB7uCk1ij0wbPf6IyXXTGaCCCNI/0qTln9hpWIRnAJeLKc03ZVtllUFHrngPUSKWW9pQPMVfDH/RF4W6IWwzNY45rlx43KSF04h+ix5QWzC9PP7NjplGFc3HaD+p65bm2A8MASQ8VhQhIGlgw42HdAJr5NjjxliXplr5I1G7i6UtbmLfsS6LbdYR0CxpctuhHrK6iYSUdvuACM8jOIcweREbY1uZK7bS27SUBqXUEkrbEOQYz0Y4PzbyfTii4uQQXCK5nNFJ8PWzAAQ9CI/07YlVBw0hv4iJH6KbwdK7yyIO2che7ahc0+8iUdaYWS+zvcn1n5ULB0xbhRTOlCFhDsukHRuynPu+rUT7qCBmboJBJ7UEh+cLX2xcRei0go946uQzx3lcvNlDe4VwDOEMHoaOiwHxx2HMQ5wENNhP27ju/WrMD2+cxZkmGZ+WfCoCxoeLOY4k4pkzN1A4xOh3vSmXeevyNg0g0yUQO24Y4oxZd5z6jyG52ETPxfp18vES94HZP5fgrKak2gDrYiYbk/CUUZvaJSi3YtkaV7UUdNAt8hcCJPmaT4C43QDduESJvFaChoxkmNf4FHba1jHkNYJG38tVHBbtYw1SHtlikgT8QrjX346rdox3cVHIg2txZaeTriACWjXtbsdV5LvTWYKZyhitPHsQ==
   template:
     metadata:
       creationTimestamp: null
@@ -22,13 +22,12 @@ metadata:
   namespace: default
 spec:
   encryptedData:
-    access.macaroon: AgCg6QTTj41313dHYB1OymitL3eO+VBmMs84dRI8oKMdCD/KaxtiEFO1NC29X93WzF04ChhRgfS42n5v8G0LZP5jTUrPUOKxSDtVDgo30lwTddeYhi75QJbPZDxG882DXdKO4bVDS/PpSP4tD1ahqXbxZWYF332BoZsAmYQDNI40H7SLzW6TmNOjGatUTauoXGUtbAheLlzZS0gwRJ9Nk84gby8ujzR/88bFQvvmmYtLAZbk/xwnKi+RHmwWUGuXEZGgiRPSD9EwOXaNsfeN3bqZFH6lnqesIspLwzAk67EUbqfWFRo52eyj20gy/uI2igcL0DpexTfbCKj6UGqkALiO5jaY9HCeEbkbpfulAo3prDpIs1INLj0RSCIlyopD4HZEjGPclu2UAz6T5oeqv2fgTQSBmD1K2CYNnS5CwEpTWo3oXfhWKePQHm/iSf1ZRE1zqwT6JRGCiR2kGHkikDj2EqAqU6ypgcRv0gq3DWpAahbVBLfT+apX3WnysqzO6w5t0iKm+ywQMCkIf9wLhzmPNxHonTVNIo7FPNpGuElmotUYycHvZIjhNHQdaFd/JvJGrof/aOGd7QqElAlMDljZrXaw2k2hF9uU9LByU7ydS9wqebIyFOnKvYsNsSLGKuITErpCR8emPiGzjTQQb/T3j97rac2xQouF8P1f3fHEZLlvgaUVmrnn0Btb4Nyo9rdbG2OOv8cEJQL/gr087kTWpw/oXN1DhaNIotL2PqfsVcn7/NZg9NUlFyk9eQRgtWpTEIAWbtLjoZwNU9Y6m5GYM33btID53bCfG5UWdAPMrit8bJs+fFTfUMQ00zEmFyTGrWGdEDm1DJsambT9vciD6KE=
+    access.macaroon: AgAesz3IiBK5ATwhjE9ZKoievT4x998/UDphSr6veBrq2rJ6wjygAQQZwnj6EJflTe4z4x8KEQxRwxldd/5fiobO3U3+2EssgxUZygKa1bM6M2kOp732BsqswKWRu+WZsxucua3t7qCzToDEVs46B2nk7YwzAZaBHp7wRB9iozxqqlswpJ4wAVIeUxiMVJhSBGrQ/nIu4/WOo1MjgO7foCzg88G7guaN3cxo2s1PxrmZfUMVhjNweZjMK7CrWk4yH9+q6Lftox5ZeoBMRb3AF9Dtjh8C8C0pO+kvxfYRo/vFkolwwpuVm7K9rarCSVmgz6h2QggBMMPZWj/CMn8+IyYTHF82GO4gXHqYGxlwwGrji1w64F+NHzcqM8eXcRJj5ROWXWPD0w5CNP5vNDY/ToQCylxM0WCgWSKVjBag768xlcx1sw8c50JkpLCzhzXU5jG8K4JTuMDMRV0wjpEoEZZTTG9Bgv+XX50Hgdsr6YTzoD9isZNIjuUB6hGpgWE1Cu86epE2+QzuFOyxGlZFH2CG2SBLalJVqc1WttQOqD7bVpUwh6tkH6tG2Yl0G5YfkJ1we9CheVuj0xCGGKUSO0BrOVZIFkI8E7WiF5LMhfr+yk7BjEktIhKcGUopmSXh7azdQyBxX1QYnbkYkUbPhrsugOufABi67RhkZyKLZmLem7pR0/qo+9ggfnCA+uK02Uq6eZOwbG3NBOsn2/m9w+vmNkcweTBjigm6+8hNldihxLMfJxIB2H5XOYplLxW2hixPznbmWELdCu9fkEOcT/gm/JdWUr2UCbMFvFdMK05t4WgT5gK0FZtvLu/1kS72ARm3CTKL3t6zWe7eXsakbeoq7kA=
   template:
     metadata:
       creationTimestamp: null
       name: cln-macaroon
       namespace: default
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -57,6 +56,8 @@ spec:
               key: password
         - name: RTL_CONFIG_PATH
           value: /rtl-config
+        - name: ENABLE_PEERSWAP
+          value: "true"
         ports:
         - name: web
           containerPort: 3010
@@ -90,7 +91,7 @@ data:
       "nodes": [
         {
           "index": 1,
-          "lnNode": "Core Lightning Testnet # 1",
+          "lnNode": "Core Lightning",
           "lnImplementation": "CLN",
           "Authentication": {
             "macaroonPath": "/rest-certs",
@@ -101,7 +102,7 @@ data:
             "themeMode": "DAY",
             "themeColor": "PURPLE",
             "bitcoindConfigPath": "",
-            "logLevel": "INFO",
+            "logLevel": "DEBUG",
             "fiatConversion": false,
             "lnServerUrl": "http://clightning-rest:3001",
             "enablePeerswap": true
