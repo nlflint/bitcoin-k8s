@@ -90,7 +90,7 @@ spec:
     spec:
       containers:
       - name: bitcoind
-        image: "bitcoind:23.0"
+        image: "bitcoind:27.1"
         args: [
           '-rpcuser=bitcoinrpc',
           '-rpcpassword=$(RPC_PASSWORD)',
@@ -145,6 +145,7 @@ metadata:
   name: bitcoind
 spec:
   type: LoadBalancer
+  loadBalancerIP: 10.98.76.54
   externalTrafficPolicy: Local
   ports:
   - name: bitcoind-p2p

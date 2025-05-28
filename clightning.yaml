@@ -191,6 +191,7 @@ metadata:
   name: clightning
 spec:
   type: LoadBalancer
+  loadBalancerIP: 10.98.76.52
   ports:
   - name: p2p
     port: 9735
