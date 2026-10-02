@@ -94,7 +94,7 @@ spec:
         args: [
           '-rpcuser=bitcoinrpc',
           '-rpcpassword=$(RPC_PASSWORD)',
-          '-disablewallet=1',
+#          '-disablewallet=1',
           '-printtoconsole=1',
           '-txindex=1',
           '-rpcbind=0.0.0.0:8332',
@@ -114,6 +114,16 @@ spec:
         volumeMounts: 
         - name: "bitcoind-data"
           mountPath: /bitcoin/.bitcoin
+        readinessProbe:
+          tcpSocket:
+            port: 8332
+          initialDelaySeconds: 120
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 8332
+          initialDelaySeconds: 120
+          periodSeconds: 5  
       - name: prometheus-exporter
         image: bitcoin-prometheus-exporter:0.7.0
         env:

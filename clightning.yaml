@@ -19,17 +19,15 @@ spec:
     spec:
       containers:
       - name: clightning
-        image: lightning:23.05-rtl-peerswap
+        image: lightning:26.06.8
         args: [
-          "--plugin=/c-lightning-REST/c-lightning-REST",
-          "--plugin=/peerswap/peerswap",
-          "--log-level=debug:plugin-peerswap-plugin",
-          "--rest-domain=cln-rest.rodan.lan",
-          "--rest-protocol=http",
           "--network=bitcoin",
           "--bitcoin-rpcuser=bitcoinrpc",
           "--bitcoin-rpcpassword=$(BITCOIN_RPC_PASSWORD)",
           "--bitcoin-rpcconnect=bitcoind",
+          "--clnrest-port=3010",
+          "--clnrest-protocol=HTTP",
+          "--clnrest-host=0.0.0.0",
         ]
         env:
         - name: EXPOSE_TCP
@@ -40,10 +38,8 @@ spec:
               name: bitcoind-rpc-pass
               key: bitcoind-rpc-pass
         ports:
-        - name: rest
-          containerPort: 3001
-        - name: swagger
-          containerPort: 4001
+        - name: clnrest
+          containerPort: 3010
         - name: p2p
           containerPort: 9735
         volumeMounts: 
@@ -51,19 +47,11 @@ spec:
           mountPath: /root/.lightning
         - name: rest-certs
           mountPath: /c-lightning-REST/certs
-      initContainers:
-        - name: peerswap-config
-          image: alpine:latest
-          command: ['sh', '-c', 'printf "[Bitcoin]\nrpcuser=\"bitcoinrpc\"\nrpcpassword=\"$(BITCOIN_RPC_PASSWORD)\"\nbitcoinswaps=true\nrpchost=\"bitcoind\"" > ~/.lightning/bitcoin/peerswap/peerswap.conf']
-          volumeMounts:
-            - name: data
-              mountPath: /root/.lightning
-          env:
-            - name: BITCOIN_RPC_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: bitcoind-rpc-pass
-                  key: bitcoind-rpc-pass 
+        livenessProbe:
+          tcpSocket:
+            port: 9735
+          initialDelaySeconds: 300
+          periodSeconds: 5  
       volumes:
       - name: data
         persistentVolumeClaim:
@@ -196,6 +184,7 @@ spec:
   - name: p2p
     port: 9735
     targetPort: p2p
+
   selector:
     app: clightning
 ---
@@ -206,11 +195,8 @@ metadata:
 spec:
   ports:
   - name: rest
-    port: 3001
-    targetPort: rest
-  - name: swagger
-    port: 4001
-    targetPort: swagger
+    port: 3010
+    targetPort: clnrest
   selector:
     app: clightning
 ---
@@ -224,13 +210,13 @@ metadata:
 spec:
   tls:
   - hosts:
-      - cln-rest.bitbeard.net
+      - cln-rest.bitbeard.online
     secretName: wildcard-cert-prod
   - hosts:
-      - cln-swagger.bitbeard.net
+      - cln-swagger.bitbeard.online
     secretName: wildcard-cert-prod
   rules:
-    - host: cln-swagger.bitbeard.net
+    - host: cln-rest.bitbeard.online
       http:
         paths:
           - path: /
@@ -239,14 +225,4 @@ spec:
               service:
                 name:  clightning-rest
                 port:
-                  number: 4001
-    - host: cln-rest.bitbeard.net
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name:  clightning-rest
-                port:
-                  number: 3001
+                  number: 3010

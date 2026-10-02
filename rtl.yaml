@@ -29,6 +29,62 @@ spec:
       name: cln-macaroon
       namespace: default
 ---
+apiVersion: zfs.openebs.io/v1alpha1
+kind: ZFSVolume
+metadata:
+  name: rtl-config  # should be same as zfs volume name
+  namespace: openebs
+spec:
+  capacity: "1048576" # size of the volume in bytes
+  fsType: zfs
+  ownerNodeID: rodan # should be the nodename where ZPOOL is running
+  poolName: datapool/k3s # poolname where the volume is present
+  volumeType: DATASET # whether it is a DATASET or ZVOL
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rtl-config-pv # some unique name
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Mi # size of the volume
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: rtl-config-pvc # name of pvc which can claim this PV
+    namespace: default # namespace for the pvc
+  csi:
+    driver: zfs.csi.openebs.io
+    fsType: zfs
+    volumeAttributes:
+      openebs.io/poolname: datapool/k3s # change the pool name accordingly
+    volumeHandle: rtl-config # This should be same as the zfs volume name
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - rodan # change the hostname where volume is present
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openebs-zfspv
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: rtl-config-pvc 
+spec:
+  storageClassName: openebs-zfspv
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,7 +103,7 @@ spec:
     spec:
       containers:
       - name: rtl
-        image: rtl:peerswap
+        image: rtl:0.15.5
         env:
         - name: APP_PASSWORD
           valueFrom:
@@ -56,24 +112,16 @@ spec:
               key: password
         - name: RTL_CONFIG_PATH
           value: /rtl-config
-        - name: ENABLE_PEERSWAP
-          value: "true"
         ports:
         - name: web
-          containerPort: 3010
+          containerPort: 3000
         volumeMounts: 
-        - name: macaroon
-          readOnly: true
-          mountPath: /rest-certs
-        - name: config
+        - name: rtl-config
           mountPath: /rtl-config
       volumes:
-      - name: macaroon
-        secret:
-          secretName: cln-macaroon
-      - name: config
-        configMap:
-          name: rtl
+      - name: rtl-config
+        persistentVolumeClaim:
+          claimName: rtl-config-pvc
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -134,10 +182,10 @@ metadata:
 spec:
   tls:
   - hosts:
-      - rtl.bitbeard.net
+      - rtl.bitbeard.online
     secretName: wildcard-cert-prod
   rules:
-    - host: rtl.bitbeard.net
+    - host: rtl.bitbeard.online
       http:
         paths:
           - path: /
